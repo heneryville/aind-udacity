@@ -23,10 +23,21 @@ def naked_twins(values):
     Returns:
         the values dictionary with the naked twins eliminated from peers.
     """
-
     # Find all instances of naked twins
+    twins = [ pair for pair in unit_pairs if values[pair[0]] == values[pair[1]] and len(values[pair[0]]) == 2 ]
+    #print([(t, values[t[0]], values[t[1]]) for t in twins])
     # Eliminate the naked twins as possibilities for their peers
+    for twin in twins:
+        for box in unitlist[twin[2]]:
+            if box == twin[0] or box == twin[1]: continue
+            for digit in values[twin[0]]:
+                assign_value(values,box, values[box].replace(digit,''))
     return values
+
+def combos(A):
+    for i in range(len(A)):
+        for j in range(i+1,len(A)):
+            yield (A[i],A[j])
 
 def cross(A, B):
     "Cross product of elements in A and elements in B."
@@ -74,7 +85,7 @@ def eliminate(values):
     for box in solved_values:
         digit = values[box]
         for peer in diag_peers[box]:
-            values[peer] = values[peer].replace(digit,'')
+            assign_value(values,peer, values[peer].replace(digit,''))
     return values
 
 def only_choice(values):
@@ -87,7 +98,8 @@ def only_choice(values):
         for digit in '123456789':
             dplaces = [box for box in unit if digit in values[box]]
             if len(dplaces) == 1:
-                values[dplaces[0]] = digit
+                assign_value(values,dplaces[0],digit)
+
     return values
 
 def reduce_puzzle(values):
@@ -152,6 +164,7 @@ square_units = [cross(rs, cs) for rs in ('ABC','DEF','GHI') for cs in ('123','45
 unitlist = row_units + column_units + square_units
 units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
 peers = dict((s, set(sum(units[s],[]))-set([s])) for s in boxes)
+unit_pairs = [ x + (i,) for i in range(len(unitlist)) for x in combos(unitlist[i])]
 
 forward_diag = [ s[0] + s[1] for s in zip(rows,cols) ]
 backward_diag = [ s[0] + s[1] for s in zip(rows,reversed(cols)) ]
@@ -163,11 +176,18 @@ if __name__ == '__main__':
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
     display(solve(diag_sudoku_grid))
 
+    print('Done running')
     try:
         from visualize import visualize_assignments
+        print('visualize import')
         visualize_assignments(assignments)
+        print('visualize done')
 
-    except SystemExit:
+    except SystemExit as e:
+        print('Could not import visualize due to system exception')
+        print(e)
         pass
-    except:
+    except Exception as e:
+        print('Could not import visualize')
+        print(e)
         print('We could not visualize your board due to a pygame issue. Not a problem! It is not a requirement.')
