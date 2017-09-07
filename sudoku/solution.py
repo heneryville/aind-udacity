@@ -24,17 +24,21 @@ def naked_twins(values):
         the values dictionary with the naked twins eliminated from peers.
     """
     # Find all instances of naked twins
+    # twins are pairs in the same unit that share possibilties of length 2
     twins = [ pair for pair in unit_pairs if values[pair[0]] == values[pair[1]] and len(values[pair[0]]) == 2 ]
-    #print([(t, values[t[0]], values[t[1]]) for t in twins])
     # Eliminate the naked twins as possibilities for their peers
     for twin in twins:
         for box in unitlist[twin[2]]:
-            if box == twin[0] or box == twin[1]: continue
+            if box == twin[0] or box == twin[1]: continue # Don't eliminate the twins themselves!
             for digit in values[twin[0]]:
                 assign_value(values,box, values[box].replace(digit,''))
     return values
 
 def combos(A):
+    """
+    All unique pairs of elements in A.
+    e.g. if A is [1,2,3], then the result is [(1,2),(1,3),(2,3)]
+    """
     for i in range(len(A)):
         for j in range(i+1,len(A)):
             yield (A[i],A[j])
@@ -51,15 +55,11 @@ def grid_values(grid):
             Keys: The boxes, e.g., 'A1'
             Values: The value in each box, e.g., '8'. If the box has no value, then the value will be '123456789'.
     """
-    chars = []
-    digits = '123456789'
-    for c in grid:
-        if c in digits:
-            chars.append(c)
-        if c == '.':
-            chars.append(digits)
-    assert len(chars) == 81
-    return dict(zip(boxes, chars))
+    def normalize(c):
+        """ Converts a dot tol all possibilities, otherwise it's what we got"""
+        if c=='.': return cols
+        return c
+    return { x[0]: normalize(x[1]) for x in zip(boxes,grid) }
 
 def display(values):
     """
@@ -81,12 +81,14 @@ def eliminate(values):
     Input: A sudoku in dictionary form.
     Output: The resulting sudoku in dictionary form.
     """
-    solved_values = [box for box in values.keys() if len(values[box]) == 1]
-    for box in solved_values:
-        digit = values[box]
-        for peer in diag_peers[box]:
-            assign_value(values,peer, values[peer].replace(digit,''))
-    return values
+    """
+    This is actually implemented as for each cell, find which 
+    """
+    def eliminateCell(cell):
+        if len(values[cell]) == 1: return values[cell]
+        nots = set([values[x] for x in peers[cell] if len(values[x]) == 1]) # set of values
+        return ''.join(set(cols) - nots)
+    return { cell:eliminateCell(cell) for cell in boxes }
 
 def only_choice(values):
     """
@@ -94,12 +96,13 @@ def only_choice(values):
     Input: A sudoku in dictionary form.
     Output: The resulting sudoku in dictionary form.
     """
-    for unit in diag_unitlist:
-        for digit in '123456789':
-            dplaces = [box for box in unit if digit in values[box]]
-            if len(dplaces) == 1:
-                assign_value(values,dplaces[0],digit)
-
+    for unit in unitlist:
+        counts = {num: [] for num in cols}
+        for cell in unit:
+            for l in values[cell]: counts[l].append(cell)
+        for num,count in counts.items():
+            if len(count) > 1: continue
+            values[count[0]] = num
     return values
 
 def reduce_puzzle(values):
@@ -160,17 +163,13 @@ boxes = cross(rows, cols)
 row_units = [cross(r, cols) for r in rows]
 column_units = [cross(rows, c) for c in cols]
 square_units = [cross(rs, cs) for rs in ('ABC','DEF','GHI') for cs in ('123','456','789')]
+forward_diag = [ s[0] + s[1] for s in zip(rows,cols) ]
+backward_diag = [ s[0] + s[1] for s in zip(rows,reversed(cols)) ]
 
-unitlist = row_units + column_units + square_units
+unitlist = row_units + column_units + square_units + [ forward_diag, backward_diag ]
 units = dict((s, [u for u in unitlist if s in u]) for s in boxes)
 peers = dict((s, set(sum(units[s],[]))-set([s])) for s in boxes)
 unit_pairs = [ x + (i,) for i in range(len(unitlist)) for x in combos(unitlist[i])]
-
-forward_diag = [ s[0] + s[1] for s in zip(rows,cols) ]
-backward_diag = [ s[0] + s[1] for s in zip(rows,reversed(cols)) ]
-diag_unitlist = row_units + column_units + square_units + [ forward_diag, backward_diag ]
-diag_units = dict((s, [u for u in diag_unitlist if s in u]) for s in boxes)
-diag_peers = dict((s, set(sum(diag_units[s],[]))-set([s])) for s in boxes)
 
 if __name__ == '__main__':
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
@@ -179,9 +178,7 @@ if __name__ == '__main__':
     print('Done running')
     try:
         from visualize import visualize_assignments
-        print('visualize import')
         visualize_assignments(assignments)
-        print('visualize done')
 
     except SystemExit as e:
         print('Could not import visualize due to system exception')
