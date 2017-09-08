@@ -56,7 +56,7 @@ def grid_values(grid):
             Values: The value in each box, e.g., '8'. If the box has no value, then the value will be '123456789'.
     """
     def normalize(c):
-        """ Converts a dot tol all possibilities, otherwise it's what we got"""
+        """ Converts a dot to all possibilities, otherwise it's what we got"""
         if c=='.': return cols
         return c
     return { x[0]: normalize(x[1]) for x in zip(boxes,grid) }
@@ -77,18 +77,17 @@ def display(values):
 
 def eliminate(values):
     """
-    Go through all the boxes, and whenever there is a box with a value, eliminate this value from the values of all its peers.
+    Go through all the boxes, and choose which values it can have based on peers that are already known.
     Input: A sudoku in dictionary form.
     Output: The resulting sudoku in dictionary form.
     """
-    """
-    This is actually implemented as for each cell, find which 
-    """
-    def eliminateCell(cell):
-        if len(values[cell]) == 1: return values[cell]
-        nots = set([values[x] for x in peers[cell] if len(values[x]) == 1]) # set of values
-        return ''.join(set(cols) - nots)
-    return { cell:eliminateCell(cell) for cell in boxes }
+    solved_values = [box for box in values.keys() if len(values[box]) == 1] # All boxes that have been solved
+    for box in solved_values:
+        digit = values[box]
+        for peer in peers[box]: # Eliminate that value in peers
+            values[peer] = values[peer].replace(digit,'')
+
+    return values
 
 def only_choice(values):
     """
@@ -97,12 +96,12 @@ def only_choice(values):
     Output: The resulting sudoku in dictionary form.
     """
     for unit in unitlist:
-        counts = {num: [] for num in cols}
+        groups = {num: [] for num in cols} # Groups cells with a given possibility.
         for cell in unit:
-            for l in values[cell]: counts[l].append(cell)
-        for num,count in counts.items():
-            if len(count) > 1: continue
-            values[count[0]] = num
+            for l in values[cell]: groups[l].append(cell)
+        for num,group in groups.items():
+            if len(group) != 1: continue #If we've got a group of size zero, it's a bad grid, but we'll discover that soon in reduce
+            values[group[0]] = num
     return values
 
 def reduce_puzzle(values):
@@ -120,8 +119,8 @@ def reduce_puzzle(values):
         values = eliminate(values)
         values = only_choice(values)
         solved_values_after = len([box for box in values.keys() if len(values[box]) == 1])
-        stalled = solved_values_before == solved_values_after
-        if len([box for box in values.keys() if len(values[box]) == 0]):
+        stalled = solved_values_before == solved_values_after # We'ved stalled if we've made no change in solved boxes
+        if len([box for box in values.keys() if len(values[box]) == 0]): # When a box has no options, we messed up. No solution here
             return False
     return values
 
@@ -136,7 +135,7 @@ def search(values):
     n,cell = min(unsolved)
     # Now use recursion to solve each one of the resulting sudokus, and if one returns a value (not False), return that answer!
     for possibility in values[cell]:
-        vCopy = values.copy()
+        vCopy = values.copy() # We're mutating values, so copy it for each branch
         vCopy[cell] = possibility
         solution = search(vCopy)
         if solution != False: return solution
@@ -154,6 +153,12 @@ def solve(grid):
     values = grid_values(grid)
 
     return search(values)
+
+def validate(values):
+    for unit in unitlist:
+        used = [ values[x] for x in unit ]
+        if len(used) != 9: raise Exception('Unit has wrong length')
+        if ''.join(sorted(used)) != cols: raise Exception('Unit has duplicate values: ' + ','.join(sorted(used)) + '\n Unit: ' + str(unit))
 
 rows = 'ABCDEFGHI'
 cols = '123456789'
@@ -173,7 +178,10 @@ unit_pairs = [ x + (i,) for i in range(len(unitlist)) for x in combos(unitlist[i
 
 if __name__ == '__main__':
     diag_sudoku_grid = '2.............62....1....7...6..8...3...9...7...6..4...4....8....52.............3'
-    display(solve(diag_sudoku_grid))
+    diag_sudoku_grid_2 = '9.1....8.8.5.7..4.2.4....6...7......5..............83.3..6......9................'
+    solution = solve(diag_sudoku_grid_2)
+    display(solution)
+    validate(solution)
 
     print('Done running')
     try:
