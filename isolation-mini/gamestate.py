@@ -16,7 +16,7 @@ class GameState:
     
     def forecast_move(self, move):
         """ Return a new board object with the specified move
-        applied to the current game state.
+t        applied to the current game state.
         
         Parameters
         ----------
