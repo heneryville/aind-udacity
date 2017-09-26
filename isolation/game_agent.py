@@ -211,29 +211,34 @@ class MinimaxPlayer(IsolationPlayer):
         """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
-        moves = game.get_legal_moves()
-        val, maxmove = max( (self.minvalue(game.forecast_move(move),depth-1), move ) for move in moves)
-        return maxmove
+        print(self.maxvalue(game,depth))
+        return self.maxvalue(game,depth)[1]
 
     def maxvalue(self,game, depth):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
         moves = game.get_legal_moves()
-        if self.terminal_test(game,moves,depth): return self.score(game,self)
-        val, maxmove = max( (self.minvalue(game.forecast_move(move),depth-1), move ) for move in moves)
-        return val
+        if self.terminal_test(game,moves,depth): return (self.score(game,self),None)
+        val, maxmove = max( 
+          (self.minvalue(game.forecast_move(move),depth-1)[0], move )
+          for move in moves
+        )
+        return (val, maxmove)
 
     def minvalue(self,game, depth):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
         moves = game.get_legal_moves()
-        if self.terminal_test(game,moves,depth): return self.score(game,self)
-        val, minmove = min( (self.maxvalue(game.forecast_move(move),depth-1), move ) for move in moves)
-        return val
+        if self.terminal_test(game,moves,depth): return (self.score(game,self),None)
+        val, minmove = min(
+          (self.maxvalue(game.forecast_move(move),depth-1)[0], move )
+          for move in moves
+        )
+        return (val,minmove)
 
     def terminal_test(self, game, moves, depth):
         if depth <= 0: return True
-        return moves.length > 0
+        return len(moves) > 0
 
 
 
