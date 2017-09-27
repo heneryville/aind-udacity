@@ -34,6 +34,29 @@ class MinimaxTest(unittest.TestCase):
         move = self.player2.get_move(self.game,always_time_left)
         self.assertEqual(move,(1,0))
 
+class AlphaBetaTest(unittest.TestCase):
+    """Unit tests for isolation agents"""
+
+    def setUp(self):
+        reload(game_agent)
+
+    def test_alpha_beta_can_forecast_single_move(self):
+        """This scenario gives the game agent only one place to start where he'll have a future move."""
+        self.player1 = "Player 1"
+        self.player2 = game_agent.AlphaBetaPlayer(3, most_moves,0)
+        self.game = isolation.Board(self.player1, self.player2, 3,3)
+        self.game.apply_move((0,0))
+        move = self.player2.get_move(self.game,always_time_left)
+        self.assertEqual(move,(1,0))
+
+    def test_alpha_beta_can_play_full_if_stupid_game_where_player_2_thinks_harder(self):
+        """This scenario gives the game agent only one place to start where he'll have a future move."""
+        self.player1 = game_agent.AlphaBetaPlayer(3, most_moves,10)
+        self.player2 = game_agent.AlphaBetaPlayer(1, most_moves,10)
+        self.game = isolation.Board(self.player1, self.player2, 7,7)
+        winner, moves,reason = self.game.play(12)
+        print(winner,reason)
+
 def always_time_left():
     return 100
 

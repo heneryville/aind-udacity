@@ -286,8 +286,21 @@ class AlphaBetaPlayer(IsolationPlayer):
         """
         self.time_left = time_left
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        # Initialize the best move so that this function returns something
+        # in case the search fails due to timeout
+        best_move = (-1, -1)
+        depth = 0
+
+        try:
+            # The try/except block will automatically catch the exception
+            # raised when the timer is about to expire.
+            while True:
+                depth = depth + 1
+                best_move = self.alphabeta(game, depth)
+
+        except SearchTimeout:
+            # Return the best move from the last completed search iteration
+            return best_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
@@ -334,8 +347,56 @@ class AlphaBetaPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
+        #print('####minimax### @ ',depth)
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
+        score, path = self.maxvalue(game,depth,float("-inf"),float("inf"),[])
+        #print('Best path',score,path)
+        return path[0]
+
+    def maxvalue(self, game, depth, alpha, beta, inpath):
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+        moves = game.get_legal_moves()
+        if self.terminal_test(game,moves,depth):
+            score = self.score(game,self)
+            #print('-'*(self.search_depth - depth) ,'max',score,inpath)
+            return (score,inpath)
+        mval = float("-inf")
+        mpath = None
+        for move in moves:
+            moved = game.forecast_move(move)
+            nval, npath = self.minvalue(moved,depth-1,alpha,beta,inpath + [move])
+            if nval > mval:
+                mval = nval
+                mpath = npath
+            if nval >= beta: return (mval,mpath)
+            alpha = max(alpha,nval)
+        return (mval, mpath)
+
+    def minvalue(self,game, depth, alpha, beta, inpath):
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+        moves = game.get_legal_moves()
+        if self.terminal_test(game,moves,depth):
+          score = self.score(game,self)
+          #print('-'*(self.search_depth - depth) ,'min',score,inpath)
+          return (score,inpath)
+        mval = float("inf")
+        mpath = None
+        for move in moves:
+            moved = game.forecast_move(move)
+            nval, npath = self.maxvalue(moved,depth-1,alpha,beta,inpath + [move])
+            if nval < mval:
+                mval = nval
+                mpath = npath
+            if nval <= alpha: return (mval,mpath)
+            beta = min(beta,nval)
+        return (mval, mpath)
+
+    def terminal_test(self, game, moves, depth):
+        if depth <= 0: return True
+        return len(moves) <= 0
 
         # TODO: finish this function!
         raise NotImplementedError
