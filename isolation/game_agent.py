@@ -209,36 +209,42 @@ class MinimaxPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
+        #print('####minimax### @ ',depth)
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
-        print(self.maxvalue(game,depth))
-        return self.maxvalue(game,depth)[1]
+        score, path = self.maxvalue(game,depth, [])
+        #print('Best path',score,path)
+        return path[0]
 
-    def maxvalue(self,game, depth):
+    def maxvalue(self, game, depth, inpath):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
         moves = game.get_legal_moves()
-        if self.terminal_test(game,moves,depth): return (self.score(game,self),None)
-        val, maxmove = max( 
-          (self.minvalue(game.forecast_move(move),depth-1)[0], move )
-          for move in moves
-        )
-        return (val, maxmove)
+        if self.terminal_test(game,moves,depth):
+          score = self.score(game,self)
+          #print('-'*(self.search_depth - depth) ,'max',score,inpath)
+          return (score,inpath)
+        nexts = ( self.minvalue(game.forecast_move(move),depth-1, inpath + [move]) for move in moves )
+        val, path = max(nexts)
+        #print('-'*(self.search_depth - depth) ,'max',val,inpath)
+        return (val, path)
 
-    def minvalue(self,game, depth):
+    def minvalue(self,game, depth, inpath):
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
         moves = game.get_legal_moves()
-        if self.terminal_test(game,moves,depth): return (self.score(game,self),None)
-        val, minmove = min(
-          (self.maxvalue(game.forecast_move(move),depth-1)[0], move )
-          for move in moves
-        )
-        return (val,minmove)
+        if self.terminal_test(game,moves,depth):
+          score = self.score(game,self)
+          #print('-'*(self.search_depth - depth) ,'min',score,inpath)
+          return (score,inpath)
+        nexts = ( self.maxvalue(game.forecast_move(move),depth-1, inpath  + [move]) for move in moves )
+        val, path = min(nexts)
+        #print('-'*(self.search_depth - depth) ,'min',val,inpath)
+        return (val,path)
 
     def terminal_test(self, game, moves, depth):
         if depth <= 0: return True
-        return len(moves) > 0
+        return len(moves) <= 0
 
 
 

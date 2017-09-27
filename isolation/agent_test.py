@@ -26,11 +26,12 @@ class MinimaxTest(unittest.TestCase):
 
     def test_minimax_can_forecast_single_move(self):
         """This scenario gives the game agent only one place to start where he'll have a future move."""
-        self.player1 = game_agent.MinimaxPlayer(3, most_moves,0)
-        self.player2 = "Player 2"
+        self.player1 = "Player 1"
+        self.player2 = game_agent.MinimaxPlayer(3, most_moves,0)
         self.game = isolation.Board(self.player1, self.player2, 3,2)
         self.game._board_state[5] = 'X'
-        move = self.player1.get_move(self.game,always_time_left)
+        self.game.apply_move((1,1))
+        move = self.player2.get_move(self.game,always_time_left)
         self.assertEqual(move,(1,0))
 
 def always_time_left():
