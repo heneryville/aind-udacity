@@ -55,6 +55,10 @@ class Board(object):
     def hash(self):
         return str(self._board_state).__hash__()
 
+    def set(self,loc,val):
+        self._board_state[loc[0] + loc[1]*self.height] = val
+
+
     @property
     def active_player(self):
         """The object registered as the player holding initiative in the
@@ -189,6 +193,10 @@ class Board(object):
         if player is None:
             player = self.active_player
         return self.__get_moves(self.get_player_location(player))
+
+    def get_moves(self,loc):
+        return self.__get_moves(loc)
+
 
     def apply_move(self, move):
         """Move the active player to a specified location.

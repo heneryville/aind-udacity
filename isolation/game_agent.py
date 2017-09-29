@@ -4,6 +4,7 @@ and include the results in your report.
 """
 import random
 import math
+import reachability
 
 class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
@@ -34,8 +35,16 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    def reachability_score(player):
+        grid = reachability.reachability(game,game.get_player_location(player))
+        return sum ( 2**-dist for dist in grid.values() )
+    return reachability_score(player) - reachability_score(game.get_opponent(player))
 
 
 def custom_score_2(game, player):
@@ -60,8 +69,17 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    own_moves = game.get_legal_moves(player)
+    opp_moves = game.get_legal_moves(game.get_opponent(player))
+    if player == game.active_player and not len(own_moves):
+        return float("-inf")
+    if player != game.active_player and not len(opp_moves):
+        return float("inf")
+
+    def get_weighted_moves(moves):
+        return sum( len(game.get_moves(move)) for move in moves ) 
+
+    return float( get_weighted_moves(own_moves) - get_weighted_moves(opp_moves)  )
 
 
 def custom_score_3(game, player):
@@ -86,8 +104,17 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    own_moves = game.get_legal_moves(player)
+    opp_moves = game.get_legal_moves(game.get_opponent(player))
+    if player == game.active_player and not len(own_moves):
+        return float("-inf")
+    if player != game.active_player and not len(opp_moves):
+        return float("inf")
+
+    def get_weighted_moves(moves):
+        return sum( len(game.get_moves(move)) for move in moves ) 
+
+    return float( (get_weighted_moves(own_moves) + 1) / ( get_weighted_moves(opp_moves) + 1) )
 
 
 class IsolationPlayer:
@@ -214,6 +241,7 @@ class MinimaxPlayer(IsolationPlayer):
             raise SearchTimeout()
         score, path = self.maxvalue(game,depth, [])
         #print('Best path',score,path)
+        if not path: return (-1,-1)
         return path[0]
 
     def maxvalue(self, game, depth, inpath):
@@ -290,13 +318,17 @@ class AlphaBetaPlayer(IsolationPlayer):
         # in case the search fails due to timeout
         best_move = (-1, -1)
         depth = 0
+        self.depth_reached = depth
 
         try:
             # The try/except block will automatically catch the exception
             # raised when the timer is about to expire.
             while True:
                 depth = depth + 1
+                self.search_depth = depth
                 best_move = self.alphabeta(game, depth)
+                self.depth_reached = depth
+                if best_move[0] < 0: return best_move # No possible best move found. We're sunk any way so just give up.
 
         except SearchTimeout:
             # Return the best move from the last completed search iteration
@@ -352,6 +384,7 @@ class AlphaBetaPlayer(IsolationPlayer):
             raise SearchTimeout()
         score, path = self.maxvalue(game,depth,float("-inf"),float("inf"),[])
         #print('Best path',score,path)
+        if len(path) == 0: return (-1,-1)
         return path[0]
 
     def maxvalue(self, game, depth, alpha, beta, inpath):
@@ -367,6 +400,7 @@ class AlphaBetaPlayer(IsolationPlayer):
         for move in moves:
             moved = game.forecast_move(move)
             nval, npath = self.minvalue(moved,depth-1,alpha,beta,inpath + [move])
+            if not mpath: mpath = npath
             if nval > mval:
                 mval = nval
                 mpath = npath
@@ -387,6 +421,7 @@ class AlphaBetaPlayer(IsolationPlayer):
         for move in moves:
             moved = game.forecast_move(move)
             nval, npath = self.maxvalue(moved,depth-1,alpha,beta,inpath + [move])
+            if not mpath: mpath = npath
             if nval < mval:
                 mval = nval
                 mpath = npath
