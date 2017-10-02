@@ -1,7 +1,7 @@
-* Record statistics about each run (win/loss, depth explored, leafs explored)
-* Make a compute cluster on AWS Lambda to better evaluate. Goal is to run 10,000 iterations quickly
-* Weight score functions jump points by reachable nodes from that square
-* Use initiative in score function to penalize squares that could be taken by the opponent
+X Record statistics about each run (win/loss, depth explored, leafs explored)
+X Make a compute cluster on AWS Lambda to better evaluate. Goal is to run 10,000 iterations quickly
+X Weight score functions jump points by reachable nodes from that square
+X Use initiative in score function to penalize squares that could be taken by the opponent
 * De-duplication in search using rotation/flipping
 * Bitboard for faster compuatation
 * Stop being fatalistic in get_move. Don't give up so easily

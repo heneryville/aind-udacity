@@ -52,11 +52,59 @@ class Board(object):
         self._board_state[-1] = Board.NOT_MOVED
         self._board_state[-2] = Board.NOT_MOVED
 
+    def rotate90(self):
+        game2 = Board(self._player_1,self._player_2,self.height,self.width)
+        game2.move_count = self.move_count
+        game2._active_player = self._active_player
+        game2._inactive_player = self._inactive_player
+
+        game2._board_state[-1] = self._board_state[-1]
+        """
+        0,0|0,1|0,2|0,3
+        1,0|1,1|1,2|1,3
+        2,0|2,1|2,2|2,3
+        3,0|3,1|3,2|3,3
+
+        3,0|2,0|1,0|0,0
+        3,1|2,1|1,1|0,1
+        3,2|2,2|1,2|0,2
+        3,3|3,1|3,2|0,3
+
+        """
+        def rot(loc1):
+            return (x,self.height - y - 1)
+
+        for x in range(self.width):
+            for y in range(self.height):
+                loc1 = (y,x)
+                loc2 = (x,self.height - y - 1)
+                game2.set(loc2,self.get(loc1))
+        game2._board_state[-2] = self.locToIndex(rot(self.indexToLoc(self._board_state[-2])))
+        game2._board_state[-3] = self.locToIndex(rot(self.indexToLoc(self._board_state[-3])))
+        return game2
+
+    def indexToLoc(self,index):
+        if index == None: return None
+        return (index//self.height , index % self.height )
+
+    def locToIndex(self,loc):
+        if loc == None: return None
+        return loc[0] + loc[1]*self.height
+
     def hash(self):
         return str(self._board_state).__hash__()
 
+    def __hash__(self):
+        return str(self._board_state).__hash__()
+
+    def __eq__(self,other):
+        return self._board_state == other._board_state
+
     def set(self,loc,val):
         self._board_state[loc[0] + loc[1]*self.height] = val
+
+    def get(self,loc):
+        return self._board_state[loc[0] + loc[1]*self.height]
 
 
     @property
