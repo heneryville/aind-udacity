@@ -14,6 +14,8 @@ from copy import copy
 TIME_LIMIT_MILLIS = 150
 
 
+Transform = namedtuple("Transform", ["name", "func"])
+
 class Board(object):
     """Implement a model for the game Isolation assuming each player moves like
     a knight in chess.
@@ -53,39 +55,51 @@ class Board(object):
         self._board_state[-2] = Board.NOT_MOVED
 
     def rotate90(self):
-        game2 = Board(self._player_1,self._player_2,self.height,self.width)
+        def rot(loc1):
+            return (loc1[1], self.height - loc1[0] - 1)
+        return self.transform(rot,self.height,self.width)
+
+    def flipX(self):
+        def flip(loc1):
+            return (self.height - loc1[0] - 1, loc1[1])
+        return self.transform(flip,self.width,self.height)
+
+    def flipY(self):
+        def flip(loc1):
+            return (loc1[0], self.width - loc1[1] -1)
+        return self.transform(flip,self.width,self.height)
+
+    def flip_diag_positive(self):
+        def flip(loc1):
+            return (loc[1],loc[0])
+        return self.transform(flip,self.height,self.width)
+
+    def flip_diag_negative(self):
+        def flip(loc1):
+            return (loc[1],loc[0])
+        return self.transform(flip,self.height,self.width)
+
+    def transform(self,func,w,h):
+        game2 = Board(self._player_1,self._player_2,w,h)
         game2.move_count = self.move_count
         game2._active_player = self._active_player
         game2._inactive_player = self._inactive_player
 
-        game2._board_state[-1] = self._board_state[-1]
-        """
-        0,0|0,1|0,2|0,3
-        1,0|1,1|1,2|1,3
-        2,0|2,1|2,2|2,3
-        3,0|3,1|3,2|3,3
-
-        3,0|2,0|1,0|0,0
-        3,1|2,1|1,1|0,1
-        3,2|2,2|1,2|0,2
-        3,3|3,1|3,2|0,3
-
-        """
-        def rot(loc1):
-            return (x,self.height - y - 1)
+        game2._board_state[-3] = self._board_state[-3] # The initiative remains the same
 
         for x in range(self.width):
             for y in range(self.height):
                 loc1 = (y,x)
-                loc2 = (x,self.height - y - 1)
+                loc2 = func(loc1)
                 game2.set(loc2,self.get(loc1))
-        game2._board_state[-2] = self.locToIndex(rot(self.indexToLoc(self._board_state[-2])))
-        game2._board_state[-3] = self.locToIndex(rot(self.indexToLoc(self._board_state[-3])))
+
+        game2._board_state[-1] = self.locToIndex(func(self.indexToLoc(self._board_state[-1])))
+        game2._board_state[-2] = self.locToIndex(func(self.indexToLoc(self._board_state[-2])))
         return game2
 
     def indexToLoc(self,index):
         if index == None: return None
-        return (index//self.height , index % self.height )
+        return (index % self.height , index // self.height )
 
     def locToIndex(self,loc):
         if loc == None: return None

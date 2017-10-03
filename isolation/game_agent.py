@@ -633,17 +633,41 @@ class ImprovedAlphaBetaPlayer(IsolationPlayer):
         return self.alpha_beta_with_score(game, depth, alpha, beta)
 
     def getSeenBoard(self,board):
-        if self.seenBoards.has(board)
+        if board in self.seenBoards:
+            print('Board had a twin')
+            print(board.to_string())
             return self.seenBoards.get(board)
         r1 = board.rotate90()
-        if self.seenBoards.has(r1)
+        if r1 in self.seenBoards:
+            print('Board had a rotation')
+            print(board.to_string())
+            print(r1.to_string())
             return self.seenBoards.get(r1)
         r2 = r1.rotate90()
-        if self.seenBoards.has(r2)
+        if r2 in self.seenBoards:
+            print('Board had a 2 rotation')
+            print(board.to_string())
+            print(r2.to_string())
             return self.seenBoards.get(r2)
         r3 = r2.rotate90()
-        if self.seenBoards.has(r3)
+        if r3 in self.seenBoards:
+            print('Board had a 3 rotation')
+            print(board.to_string())
+            print(r3.to_string())
             return self.seenBoards.get(r3)
+        fx = board.flipX()
+        if fx in self.seenBoards:
+            print('Board had an x flip')
+            print(board.to_string())
+            print(fx.to_string())
+            return self.seenBoards.get(fx)
+        fy = board.flipY()
+        if fy in self.seenBoards:
+            print('Board had a y flip')
+            print(board.to_string())
+            print(fy.to_string())
+            return self.seenBoards.get(fy)
+        return None
 
 
     def setSeenBoard(self,board, val):
@@ -662,8 +686,8 @@ class ImprovedAlphaBetaPlayer(IsolationPlayer):
             moved = game.forecast_move(move)
             seenVal = self.getSeenBoard(moved)
             if seenVal:
-                nval = seenVal
                 print('Was able to prune',moved)
+                nval = seenVal
             else:
                 nval = self.minvalue(moved,depth-1,alpha,beta)
                 self.setSeenBoard(moved,nval)
@@ -684,7 +708,13 @@ class ImprovedAlphaBetaPlayer(IsolationPlayer):
         mval = float("inf")
         for move in moves:
             moved = game.forecast_move(move)
-            nval = self.maxvalue(moved,depth-1,alpha,beta)
+            seenVal = self.getSeenBoard(moved)
+            if seenVal:
+                print('Was able to prune',moved)
+                nval = seenVal
+            else:
+                nval = self.maxvalue(moved,depth-1,alpha,beta)
+                self.setSeenBoard(moved,nval)
             if nval < mval:
                 mval = nval
             if nval <= alpha: return mval

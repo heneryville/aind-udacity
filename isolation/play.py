@@ -16,7 +16,7 @@ from game_agent import *
 TIME_LIMIT = 200  # number of milliseconds before timeout
 
 Agent = namedtuple("Agent", ["constructor", "name"])
-a1 = Agent(lambda: AlphaBetaPlayer(score_fn=improved_score), "normal agent")
+a1 = Agent(lambda: ImprovedAlphaBetaPlayer(score_fn=improved_score), "normal agent")
 a2 = Agent(lambda: ImprovedAlphaBetaPlayer(score_fn=improved_score), "imporved agent")
 
 p1 = a1.constructor()
