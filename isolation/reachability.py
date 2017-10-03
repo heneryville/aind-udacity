@@ -18,10 +18,6 @@ def reachability(game,loc,limit=99):
                 heapq.heappush(q,(cost+1,v2))
     return grid
 
-def compute_reachability(width,height,loc,limit=99):
-    game = Board("p1", "p2",width,height)
-    print(reachability(game,loc,limit).to_string())
-
 def opposed_reachability(game,loc_p1,loc_p2,limit=99):
     cellCount = game.width * game.height
     grid = CostGrid(game.width,game.height)

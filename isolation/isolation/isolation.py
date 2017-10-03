@@ -13,9 +13,6 @@ from copy import copy
 
 TIME_LIMIT_MILLIS = 150
 
-
-Transform = namedtuple("Transform", ["name", "func"])
-
 class Board(object):
     """Implement a model for the game Isolation assuming each player moves like
     a knight in chess.
@@ -70,13 +67,13 @@ class Board(object):
         return self.transform(flip,self.width,self.height)
 
     def flip_diag_positive(self):
-        def flip(loc1):
+        def flip(loc):
             return (loc[1],loc[0])
         return self.transform(flip,self.height,self.width)
 
     def flip_diag_negative(self):
-        def flip(loc1):
-            return (loc[1],loc[0])
+        def flip(loc):
+            return (self.width - loc[1] - 1, self.height - loc[0] - 1)
         return self.transform(flip,self.height,self.width)
 
     def transform(self,func,w,h):

@@ -23,4 +23,9 @@ def max_value(gameState):
     nodes.
     """
     if terminal_test(gameState): return -1
-    return max( min_value(gameState.forecast_move(move)) for move in gameState.get_legal_moves() )
+
+def minimax(gameState):
+    if gameState.initiative == 0:
+        return min([( max_value(gameState.forecast_move(move)), move) for move in gameState.get_legal_moves()])[1]
+    else:
+        return max([( min_value(gameState.forecast_move(move)), move) for move in gameState.get_legal_moves()])[1]

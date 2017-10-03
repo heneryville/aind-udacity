@@ -56,7 +56,7 @@ class TransformationsTest(unittest.TestCase):
         self.assertEqual(game.indexToLoc(3),(3,0))
         self.assertEqual(game.indexToLoc(4),(0,1))
         self.assertEqual(game.indexToLoc(5),(1,1))
-        
+
 
     def test_it_rotates(self):
         player1 = "Player 1"
@@ -121,6 +121,22 @@ class TransformationsTest(unittest.TestCase):
         self.assertEqual(rotated.get((3,3)),1)
         self.assertEqual(rotated._board_state[-1],0)
         self.assertEqual(rotated._board_state[-2],15)
+
+    def test_it_flips_diag_negative(self):
+        player1 = "Player 1"
+        player2 = "Player 2"
+        game = isolation.Board(player1, player2, 4,4)
+        game.apply_move((0,0))
+        game.apply_move((3,3))
+        game.set((0,3),3)
+        game.set((3,0),4)
+        rotated = game.flip_diag_negative()
+        self.assertEqual(rotated.get((0,0)),1)
+        self.assertEqual(rotated.get((3,0)),4)
+        self.assertEqual(rotated.get((0,3)),3)
+        self.assertEqual(rotated.get((3,3)),1)
+        self.assertEqual(rotated._board_state[-1],15)
+        self.assertEqual(rotated._board_state[-2],0)
 
 if __name__ == '__main__':
     unittest.main()

@@ -3,8 +3,6 @@ import random
 import warnings
 import threading
 import os
-import boto3
-import json
 
 from collections import namedtuple
 
@@ -16,8 +14,8 @@ from game_agent import *
 TIME_LIMIT = 200  # number of milliseconds before timeout
 
 Agent = namedtuple("Agent", ["constructor", "name"])
-a1 = Agent(lambda: ImprovedAlphaBetaPlayer(score_fn=improved_score), "normal agent")
-a2 = Agent(lambda: ImprovedAlphaBetaPlayer(score_fn=improved_score), "imporved agent")
+a1 = Agent(lambda: AlphaBetaPlayer(score_fn=improved_score), "normal agent")
+a2 = Agent(lambda: AlphaBetaPlayer(score_fn=improved_score), "imporved agent")
 
 p1 = a1.constructor()
 p2 = a2.constructor()

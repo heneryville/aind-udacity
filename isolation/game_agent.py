@@ -4,14 +4,14 @@ and include the results in your report.
 """
 import random
 import math
-import reachability
-import exitability
-from time import sleep
+import heapq
+from isolation import Board
 
 class SearchTimeout(Exception):
     """Subclass base exception for code clarity. """
     pass
 
+# A list of some negative powers of 2 so I don't have to re-compute them. NEG_POWERS[i] = 2**-i
 NEG_POWERS = [1,.5,.25,.125,.0625,.03125]
 
 def opposed_reachable(game,player):
@@ -23,9 +23,9 @@ def opposed_reachable(game,player):
         return float("inf")
 
     if game.active_player == player:
-        grid = reachability.opposed_reachability(game,game.get_player_location(player),game.get_player_location(game.get_opponent(player)),LIMIT)
+        grid = opposed_reachability(game,game.get_player_location(player),game.get_player_location(game.get_opponent(player)),LIMIT)
     else:
-        grid = reachability.opposed_reachability(game,game.get_player_location(game.get_opponent(player)),game.get_player_location(player),LIMIT)
+        grid = opposed_reachability(game,game.get_player_location(game.get_opponent(player)),game.get_player_location(player),LIMIT)
         grid.negate()
 
     pValues = sum ( NEG_POWERS[int(dist)] for dist in grid.values() if dist > 0 and dist <= LIMIT )
@@ -34,6 +34,7 @@ def opposed_reachable(game,player):
     return pValues - oValues
 
 def reachable_diff(game,player):
+    LIMIT = 3
     if game.is_loser(player):
         return float("-inf")
 
@@ -41,8 +42,8 @@ def reachable_diff(game,player):
         return float("inf")
 
     def reachability_score(player):
-        grid = reachability.reachability(game,game.get_player_location(player))
-        return sum ( NEG_POWERS[dist] for dist in grid.values() )
+        grid = reachability(game,game.get_player_location(player),LIMIT)
+        return sum ( NEG_POWERS[int(dist)] for dist in grid.values() if dist <= LIMIT  )
     return reachability_score(player) - reachability_score(game.get_opponent(player))
 
 def weighted_precomputed_move_advantage_with_initiative(game,player):
@@ -59,7 +60,7 @@ def weighted_precomputed_move_advantage_with_initiative(game,player):
         own_moves = own_moves - opp_moves
 
     def get_weighted_moves(moves):
-        return sum( exitability.exitability(move) for move in moves ) 
+        return sum( exitability(move) for move in moves )
 
     return float( get_weighted_moves(own_moves) - get_weighted_moves(opp_moves)  )
 
@@ -72,7 +73,7 @@ def weighted_precomputed_move_advantage(game,player):
         return float("inf")
 
     def get_weighted_moves(moves):
-        return sum( exitability.exitability(move) for move in moves ) 
+        return sum( exitability(move) for move in moves )
 
     return float( get_weighted_moves(own_moves) - get_weighted_moves(opp_moves)  )
 
@@ -85,7 +86,7 @@ def weighted_move_advantage(game,player):
         return float("inf")
 
     def get_weighted_moves(moves):
-        return sum( len(game.get_moves(move)) for move in moves ) 
+        return sum( len(game.get_moves(move)) for move in moves )
 
     return float( get_weighted_moves(own_moves) - get_weighted_moves(opp_moves)  )
 
@@ -114,7 +115,7 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    return opposed_reachable(game,player)
+    return weighted_precomputed_move_advantage_with_initiative(game,player)
 
 
 def custom_score_2(game, player):
@@ -164,7 +165,8 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    return weighted_move_advantage(game,player)
+    return opposed_reachable(game,player)
+
 
 
 class IsolationPlayer:
@@ -448,7 +450,7 @@ class AlphaBetaPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
-        return self.alpha_beta_with_score(game, depth, alpha, beta)
+        return self.alpha_beta_with_score(game, depth, alpha, beta)[1]
 
     def maxvalue(self, game, depth, alpha, beta, inpath):
         if self.time_left() < self.TIMER_THRESHOLD:
@@ -496,73 +498,8 @@ class AlphaBetaPlayer(IsolationPlayer):
         if depth <= 0: return True
         return len(moves) <= 0
 
-class ImprovedAlphaBetaPlayer(IsolationPlayer):
-    """Game-playing agent that chooses a move using iterative deepening minimax
-    search with alpha-beta pruning. You must finish and test this player to
-    make sure it returns a good move before the search time limit expires.
-    """
 
-    def __init__(self, search_depth=3, score_fn=custom_score, timeout=20.):
-        self.search_depth = search_depth
-        self.score = score_fn
-        self.time_left = None
-        self.TIMER_THRESHOLD = timeout
-        self.depths_reached = []
-
-    def get_move(self, game, time_left):
-        """Search for the best move from the available legal moves and return a
-        result before the time limit expires.
-
-        Modify the get_move() method from the MinimaxPlayer class to implement
-        iterative deepening search instead of fixed-depth search.
-
-        **********************************************************************
-        NOTE: If time_left() < 0 when this function returns, the agent will
-              forfeit the game due to timeout. You must return _before_ the
-              timer reaches 0.
-        **********************************************************************
-
-        Parameters
-        ----------
-        game : `isolation.Board`
-            An instance of `isolation.Board` encoding the current state of the
-            game (e.g., player locations and blocked cells).
-
-        time_left : callable
-            A function that returns the number of milliseconds left in the
-            current turn. Returning with any less than 0 ms remaining forfeits
-            the game.
-
-        Returns
-        -------
-        (int, int)
-            Board coordinates corresponding to a legal move; may return
-            (-1, -1) if there are no available legal moves.
-        """
-        self.time_left = time_left
-
-        # Initialize the best move so that this function returns something
-        # in case the search fails due to timeout
-        best_move = (-1, -1)
-        depth = 0
-
-        try:
-            # The try/except block will automatically catch the exception
-            # raised when the timer is about to expire.
-            while True:
-                depth = depth + 1
-                self.search_depth = depth
-                score, best_move = self.alphabeta_with_score(game, depth)
-                if score == float("-inf") or score == float("inf"): # The game is solved from this point, don't keep searching
-                  print("Got move on solve, with depth of ", depth, best_move)
-                  #self.depths_reached.append(depth) #Depths on solves are lest interesting since they are easier and different than open field depths
-                  return best_move
-
-        except SearchTimeout:
-            # Return the best move from the last completed search iteration
-            print("Got move on time, with depth of ", depth, best_move)
-            self.depths_reached.append(depth)
-            return best_move
+class PruningAlphaBetaPlayer(AlphaBetaPlayer):
 
     def alphabeta_with_score(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         #print('####minimax### @ ',depth)
@@ -574,8 +511,13 @@ class ImprovedAlphaBetaPlayer(IsolationPlayer):
         best_move = None
         for move in moves:
             moved = game.forecast_move(move)
-            nval = self.minvalue(moved,depth-1,alpha,beta)
-            self.setSeenBoard(moved,nval)
+            seenVal = self.getSeenBoard(moved)
+            if seenVal:
+                print('Was able to prune',moved)
+                nval = seenVal
+            else:
+                nval = self.minvalue(moved,depth-1,alpha,beta)
+                self.setSeenBoard(moved,nval)
             if not best_move: best_move = move
             if nval > mval:
                 mval = nval
@@ -634,39 +576,27 @@ class ImprovedAlphaBetaPlayer(IsolationPlayer):
 
     def getSeenBoard(self,board):
         if board in self.seenBoards:
-            print('Board had a twin')
-            print(board.to_string())
             return self.seenBoards.get(board)
         r1 = board.rotate90()
         if r1 in self.seenBoards:
-            print('Board had a rotation')
-            print(board.to_string())
-            print(r1.to_string())
             return self.seenBoards.get(r1)
         r2 = r1.rotate90()
         if r2 in self.seenBoards:
-            print('Board had a 2 rotation')
-            print(board.to_string())
-            print(r2.to_string())
             return self.seenBoards.get(r2)
         r3 = r2.rotate90()
         if r3 in self.seenBoards:
-            print('Board had a 3 rotation')
-            print(board.to_string())
-            print(r3.to_string())
             return self.seenBoards.get(r3)
         fx = board.flipX()
         if fx in self.seenBoards:
-            print('Board had an x flip')
-            print(board.to_string())
-            print(fx.to_string())
             return self.seenBoards.get(fx)
         fy = board.flipY()
         if fy in self.seenBoards:
-            print('Board had a y flip')
-            print(board.to_string())
-            print(fy.to_string())
             return self.seenBoards.get(fy)
+        fd = board.flip_diag_positive()
+        if fy in self.seenBoards:
+            fnd = board.flip_diag_negative()
+        if fy in self.seenBoards:
+            return self.seenBoards.get(fnd)
         return None
 
 
@@ -710,7 +640,6 @@ class ImprovedAlphaBetaPlayer(IsolationPlayer):
             moved = game.forecast_move(move)
             seenVal = self.getSeenBoard(moved)
             if seenVal:
-                print('Was able to prune',moved)
                 nval = seenVal
             else:
                 nval = self.maxvalue(moved,depth-1,alpha,beta)
@@ -724,3 +653,103 @@ class ImprovedAlphaBetaPlayer(IsolationPlayer):
     def terminal_test(self, game, moves, depth):
         if depth <= 0: return True
         return len(moves) <= 0
+
+#*****************
+#* The below code is copied from other files since the auto-grader does not accept multiple files
+#*****************
+
+# Defines on a 7x7 board how many possible moves there are from each square. In (y,x) => y + x * h notation
+EXIT_7x7 = [2, 3, 4, 4, 4, 3, 2, 3, 4, 6, 6, 6, 4, 3, 4, 6, 8, 8, 8, 6, 4, 4, 6, 8, 8, 8, 6, 4, 4, 6, 8, 8, 8, 6, 4, 3, 4, 6, 6, 6, 4, 3, 2, 3, 4, 4, 4, 3, 2]
+
+def exitability(loc):
+    return EXIT_7x7[loc[0] + loc[1] * 7]
+
+def reachability(game,loc,limit=99):
+    """
+    Dijkstra' algoritim. Will search for all nodes reachable from loc on game (depth limited) and returns a grid with the number of moves to reach each.
+    Unreachable nodes will return infinity, and the starting node will be 0
+    """
+    cellCount = game.width * game.height
+    grid = CostGrid(game.width,game.height)
+    q = [ (0,loc) ]
+    seen = set()
+
+    while q:
+        (cost,v1) = heapq.heappop(q)
+        if v1 not in seen:
+            seen.add(v1)
+            if cost > limit: return grid
+            grid.set(v1,cost)
+            if len(seen) == cellCount: return grid
+            for v2 in game.get_moves(v1):
+                heapq.heappush(q,(cost+1,v2))
+    return grid
+
+def opposed_reachability(game,loc_p1,loc_p2,limit=99):
+    """
+    Dijkstra' algoritim but seeded with two starting nodes. This will return a cost grid with positive values being cells reached by player 1 first,
+    and negative values being cells reached by player 2 first. Nodes that are equal distant will be given to player 1, so ensure that is the player with initiative.
+    """
+    cellCount = game.width * game.height
+    grid = CostGrid(game.width,game.height)
+    q = [ (0,False,loc_p1), (0,True,loc_p2) ] #The player that has initiative should get get to reach all cells first in case of a tie
+    seen = set()
+
+    while q:
+        cost,p2,v1 = heapq.heappop(q)
+        if v1 not in seen:
+            seen.add(v1)
+            if cost > limit: return grid
+            if p2: grid.set(v1,-cost)
+            else: grid.set(v1,cost)
+            if len(seen) == cellCount: return grid
+            for v2 in game.get_moves(v1):
+                heapq.heappush(q,(cost+1,p2,v2))
+    return grid
+
+class CostGrid:
+    """
+    A grid that holds a value in each square. Used to evaluate dijkstra's algo
+    """
+    def __init__(self,width,height):
+        self.width = width
+        self.height = height
+        self._board = [float("inf")] * (width*height)
+
+    def at(self,loc):
+        return self._board[loc[0] + loc[1] * self.height]
+
+    def set(self,loc,cost):
+        self._board[loc[0] + loc[1] * self.height] = cost
+
+    def negate(self):
+        for i in range(len(self._board)):
+            self._board[i] = - self._board[i]
+
+    def pairs(self):
+        for x in range(self.width):
+            for y in range(self.height):
+                loc = (y,x)
+                yield (self.at(loc),loc)
+
+    def values(self):
+        return self._board
+
+    def to_string(self):
+        """Generate a string representation of the current game state, marking
+        the location of each player and indicating which cells have been
+        blocked, and which remain open.
+        """
+        col_margin = len(str(self.height - 1)) + 1
+        prefix = "{:<" + "{}".format(col_margin) + "}"
+        offset = " " * (col_margin + 3)
+        out = offset + '   '.join(map(str, range(self.width))) + '\n\r'
+        for i in range(self.height):
+            out += prefix.format(i) + ' | '
+            for j in range(self.width):
+                idx = i + j * self.height
+                out += str(self._board[idx])
+                out += ' | '
+            out += '\n\r'
+
+        return out
