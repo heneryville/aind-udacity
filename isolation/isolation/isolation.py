@@ -253,10 +253,6 @@ class Board(object):
             player = self.active_player
         return self.__get_moves(self.get_player_location(player))
 
-    def get_moves(self,loc):
-        return self.__get_moves(loc)
-
-
     def apply_move(self, move):
         """Move the active player to a specified location.
 
