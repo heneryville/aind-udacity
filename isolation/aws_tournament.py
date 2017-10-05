@@ -18,8 +18,8 @@ TIME_LIMIT = 200  # number of milliseconds before timeout
 INSTANCES = 250  # number of game agents that will be initiated
 
 Agent = namedtuple("Agent", ["constructor", "name"])
-a1 = Agent(lambda: ImprovedAlphaBetaPlayer(score_fn=improved_score), "imporved agent")
-a2 = Agent(lambda: AlphaBetaPlayer(score_fn=improved_score), "normal agent")
+a1 = Agent(lambda: AlphaBetaPlayer(score_fn=improved_score), "imporved agent")
+a2 = Agent(lambda: AlphaBetaPlayer(score_fn=custom_score_3), "reachability")
 
 def play_matches():
     g1p1 = a1.constructor()
@@ -99,7 +99,7 @@ def fork_aws():
 def swarm_aws():
     client = boto3.client('lambda')
     print('Updating Lambda function...')
-    os.system("./upload.sh")
+    os.system("./scripts/upload.sh")
     print('Running agents')
     threads = [ threading.Thread(target=fork_aws, args=(), kwargs={}) for x in range(INSTANCES) ]
     for thread in threads: thread.start()
