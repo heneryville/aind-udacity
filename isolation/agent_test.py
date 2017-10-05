@@ -50,16 +50,16 @@ class AlphaBetaTest(unittest.TestCase):
 
     def test_alpha_beta_can_forecast_single_move(self):
         self.player1 = "Player 1"
-        self.player2 = game_agent.AlphaBetaPlayer(3, most_moves,1)
+        self.player2 = game_agent.AlphaBetaPlayer(3, most_moves,20)
         self.player2.debug = True
         self.game = isolation.Board(self.player1, self.player2, 7,7)
         self.game.apply_move((0,0))
         start = timeit.default_timer()
-        move = self.player2.get_move(self.game,timer(10))
+        move = self.player2.get_move(self.game,timer(300))
         end = timeit.default_timer()
         print(end-start)
         self.assertTrue( (end-start) < 10)
-        self.assertEqual(move,(2,2))
+        self.assertEqual(move,(1,0))
 
     """
     def test_alpha_beta_can_prune(self):

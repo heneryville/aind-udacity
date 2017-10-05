@@ -383,27 +383,15 @@ class AlphaBetaPlayer(IsolationPlayer):
             # raised when the timer is about to expire.
             while True:
                 depth = depth + 1
-                self.search_depth = depth
-                score, best_move = self.alphabeta_with_score(game, depth)
-                if score == float("-inf") or score == float("inf"): # The game is solved from this point, don't keep searching
-                  #print("Got move on solve, with depth of ", depth)
-                  #self.depths_reached.append(depth) #Depths on solves are lest interesting since they are easier and different than open field depths
-                  return best_move
+                best_move = self.alphabeta(game, depth)
+            print("Got move on depth limit, with depth of ", self.search_depth)
+            return best_move
 
         except SearchTimeout:
             # Return the best move from the last completed search iteration
-            #print("Got move on time, with depth of ", depth)
+            print("Got move on time, with depth of ", depth)
             self.depths_reached.append(depth)
             return best_move
-
-    def alphabeta_with_score(self, game, depth, alpha=float("-inf"), beta=float("inf")):
-        #print('####minimax### @ ',depth)
-        if self.time_left() < self.TIMER_THRESHOLD:
-            raise SearchTimeout()
-        score, path = self.maxvalue(game,depth,float("-inf"),float("inf"),[])
-        #print('Best path',score,path)
-        if not path: return float("-inf"),(-1,-1)
-        return score, path[0]
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
@@ -450,7 +438,11 @@ class AlphaBetaPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
-        return self.alphabeta_with_score(game, depth, alpha, beta)[1]
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+        score, path = self.maxvalue(game,depth,float("-inf"),float("inf"),[])
+        if not path: return (-1,-1)
+        return path[0]
 
     def maxvalue(self, game, depth, alpha, beta, inpath):
         if self.time_left() < self.TIMER_THRESHOLD:
