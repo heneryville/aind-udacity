@@ -93,10 +93,11 @@ def depthFirstSearch(problem):
   while not frontier.isEmpty():
     node = frontier.pop()
     state = node[0]
-    if problem.isGoalState(state):
-      return unwrapPath(node,1,2)
     for child, child_dir, _  in problem.getSuccessors(state):
       if child in hasSeen: continue
+      if problem.isGoalState(child):
+        path = unwrapPath((child, child_dir, node),1,2)
+        return path
       hasSeen.add(child)
       frontier.push( (child, child_dir, node) )
   return None
@@ -107,12 +108,46 @@ def breadthFirstSearch(problem):
   [2nd Edition: p 73, 3rd Edition: p 82]
   """
   "*** YOUR CODE HERE ***"
-  util.raiseNotDefined()
+  frontier = util.Queue()
+  frontier.push((problem.getStartState(), None, None))
+
+  hasSeen = set()
+
+  while not frontier.isEmpty():
+    node = frontier.pop()
+    state = node[0]
+    for child, child_dir, _  in problem.getSuccessors(state):
+      if child in hasSeen: continue
+      if problem.isGoalState(child):
+        return unwrapPath((child, child_dir, node),1,2)
+      hasSeen.add(child)
+      frontier.push( (child, child_dir, node) )
+  return None
       
 def uniformCostSearch(problem):
   "Search the node of least total cost first. "
   "*** YOUR CODE HERE ***"
-  util.raiseNotDefined()
+  print('Starting UCS')
+  frontier = util.PriorityQueue()
+  frontier.push((0,problem.getStartState(), None, None),0)
+
+  hasSeen = set()
+
+  while not frontier.isEmpty():
+    node = frontier.pop()
+    cost = node[0]
+    state = node[1]
+    if problem.isGoalState(state):
+      print 'Final cost',cost
+      return unwrapPath(node,2,3)
+    if state in hasSeen: continue
+    hasSeen.add(state)
+    print('Now serving',state)
+    print('Successors will be',problem.getSuccessors(state))
+    for child, child_dir, link_cost  in problem.getSuccessors(state):
+      frontier.push( (cost + link_cost, child, child_dir, node), cost + link_cost )
+  print 'Failed to find'
+  return None
 
 def nullHeuristic(state, problem=None):
   """
@@ -124,12 +159,28 @@ def nullHeuristic(state, problem=None):
 def aStarSearch(problem, heuristic=nullHeuristic):
   "Search the node that has the lowest combined cost and heuristic first."
   "*** YOUR CODE HERE ***"
-  util.raiseNotDefined()
+  frontier = util.PriorityQueue()
+  frontier.push((0,problem.getStartState(), None, None),0)
+
+  hasSeen = set()
+
+  while not frontier.isEmpty():
+    node = frontier.pop()
+    cost = node[0]
+    state = node[1]
+    if problem.isGoalState(state):
+      print 'Final cost',cost
+      return unwrapPath(node,2,3)
+    if state in hasSeen: continue
+    hasSeen.add(state)
+    for child, child_dir, link_cost  in problem.getSuccessors(state):
+      frontier.push( (cost + link_cost, child, child_dir, node), cost + link_cost + heuristic(child,problem) )
+  return None
     
 
 def unwrapPath(start, pluck_index, next_index):
   if start == None: return []
-  path = [ start[pluck_index] ]
+  path = []
   while start[pluck_index] != None:
     path.append(start[pluck_index])
     start = start[next_index]

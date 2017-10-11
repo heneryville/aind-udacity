@@ -281,12 +281,17 @@ class CornersProblem(search.SearchProblem):
   def getStartState(self):
     "Returns the start state (in your state space, not the full Pacman state space)"
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return (self.startingPosition,tuple([])) 
     
   def isGoalState(self, state):
     "Returns whether this search state is a goal state of the problem"
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return len(state[1]) == 4
+
+  def cornersVisited(self,loc,seen):
+    seen = set(seen)
+    if loc in self.corners: seen.add(loc)
+    return tuple(seen)
        
   def getSuccessors(self, state):
     """
@@ -300,6 +305,7 @@ class CornersProblem(search.SearchProblem):
      cost of expanding to that successor
     """
     
+    currentPosition, seenCorners = state
     successors = []
     for action in [Directions.NORTH, Directions.SOUTH, Directions.EAST, Directions.WEST]:
       # Add a successor state to the successor list if the action is legal
@@ -308,9 +314,17 @@ class CornersProblem(search.SearchProblem):
       #   dx, dy = Actions.directionToVector(action)
       #   nextx, nexty = int(x + dx), int(y + dy)
       #   hitsWall = self.walls[nextx][nexty]
-      
       "*** YOUR CODE HERE ***"
-      
+      x,y = currentPosition
+      dx, dy = Actions.directionToVector(action)
+      nextx, nexty = int(x + dx), int(y + dy)
+      hitsWall = self.walls[nextx][nexty]
+      if hitsWall:
+        continue
+      loc = (nextx, nexty)
+      state = (loc, self.cornersVisited(loc,seenCorners))
+      succ = (state, action,  self.getCostOfActions([action]))
+      successors.append( succ )
     self._expanded += 1
     return successors
 
@@ -343,9 +357,71 @@ def cornersHeuristic(state, problem):
   """
   corners = problem.corners # These are the corner coordinates
   walls = problem.walls # These are the walls of the maze, as a Grid (game.py)
+  remaining_corners = list(set(corners) - set(state[1]))
   
   "*** YOUR CODE HERE ***"
-  return 0 # Default to trivial solution
+  
+  #relaxed_problem = CornersRelaxedProblem(state[0],remaining_corners)
+  #heuristic = relaxed_problem.get_solution_cost()
+  #return heuristic
+
+  "Distance from current self to all remaining nodes"
+  dist_to_corners = [util.manhattanDistance(c,state[0]) for c in remaining_corners]
+  sum_of_costs = sum(dist_to_corners)
+  #print state[0], remaining_corners, dist_to_corners, sum_of_costs
+  return sum_of_costs
+
+"""
+  A problem that has agents seeking for the corners, but is relaxed in that
+  it allows them to "teleport" to the remaining corners at manhattan cost of,
+  in other words, they can move through walls
+"""
+
+class CornersRelaxedProblem(search.SearchProblem):
+  def __init__(self, startingLoc, corners):
+    print 'starting relaxed problem with',startingLoc,corners
+    self.startingPosition = startingLoc
+    self.corners = set(corners)
+    
+  def getStartState(self):
+    return (self.startingPosition,tuple([])) 
+    
+  def isGoalState(self, state):
+    return len(state[1]) == len(self.corners)
+
+  def visitCorner(self,loc,seen):
+    seen = set(seen)
+    if loc in self.corners:
+      seen.add(loc)
+    return tuple(seen)
+       
+  def getSuccessors(self, state):
+    currentPosition, seen_corners = state
+    remaining_corners = self.corners - set(seen_corners)
+    to_corner_states = [ (c,self.visitCorner(c,seen_corners))  for c in remaining_corners ]
+    successors = [ (c, c[0], util.manhattanDistance(currentPosition,c[0]))  for c in to_corner_states ]
+    return successors
+
+  def get_solution_cost(self):
+    actions  = search.uniformCostSearch(self)
+    print 'Actions found',actions
+    totalCost = self.getCostOfActions(actions)
+    print('HPath found with total cost of %d' % (totalCost))
+    return totalCost
+    
+
+  def getCostOfActions(self, actions):
+    """
+    Returns the cost of a particular sequence of actions.  If those actions
+    include an illegal move, return 999999.  This is implemented for you.
+    """
+    cost = 0
+    if actions == None: return 999999
+    loc = self.startingPosition
+    for action in actions:
+      cost = cost + util.manhattanDistance( loc, action)
+      loc = action
+    return cost
 
 class AStarCornersAgent(SearchAgent):
   "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
