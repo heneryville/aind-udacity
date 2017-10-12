@@ -127,7 +127,7 @@ def breadthFirstSearch(problem):
 def uniformCostSearch(problem):
   "Search the node of least total cost first. "
   "*** YOUR CODE HERE ***"
-  print('Starting UCS')
+  #print('Starting UCS')
   frontier = util.PriorityQueue()
   frontier.push((0,problem.getStartState(), None, None),0)
 
@@ -138,15 +138,14 @@ def uniformCostSearch(problem):
     cost = node[0]
     state = node[1]
     if problem.isGoalState(state):
-      print 'Final cost',cost
       return unwrapPath(node,2,3)
     if state in hasSeen: continue
     hasSeen.add(state)
-    print('Now serving',state)
-    print('Successors will be',problem.getSuccessors(state))
+    #print('Now serving',state)
+    #print('Successors will be',problem.getSuccessors(state))
     for child, child_dir, link_cost  in problem.getSuccessors(state):
       frontier.push( (cost + link_cost, child, child_dir, node), cost + link_cost )
-  print 'Failed to find'
+  #print 'Failed to find'
   return None
 
 def nullHeuristic(state, problem=None):
@@ -169,7 +168,7 @@ def aStarSearch(problem, heuristic=nullHeuristic):
     cost = node[0]
     state = node[1]
     if problem.isGoalState(state):
-      print 'Final cost',cost
+      #print 'Final cost',cost, len(unwrapPath(node,2,3))
       return unwrapPath(node,2,3)
     if state in hasSeen: continue
     hasSeen.add(state)

@@ -323,7 +323,7 @@ class CornersProblem(search.SearchProblem):
         continue
       loc = (nextx, nexty)
       state = (loc, self.cornersVisited(loc,seenCorners))
-      succ = (state, action,  self.getCostOfActions([action]))
+      succ = (state, action, 1 )
       successors.append( succ )
     self._expanded += 1
     return successors
@@ -361,9 +361,10 @@ def cornersHeuristic(state, problem):
   
   "*** YOUR CODE HERE ***"
   
-  #relaxed_problem = CornersRelaxedProblem(state[0],remaining_corners)
-  #heuristic = relaxed_problem.get_solution_cost()
-  #return heuristic
+  relaxed_problem = CornersRelaxedProblem(state[0],remaining_corners)
+  heuristic = relaxed_problem.get_solution_cost()
+  #print 'At',state,'heuristic is',heuristic
+  return heuristic
 
   "Distance from current self to all remaining nodes"
   dist_to_corners = [util.manhattanDistance(c,state[0]) for c in remaining_corners]
@@ -377,38 +378,38 @@ def cornersHeuristic(state, problem):
   in other words, they can move through walls
 """
 
-class CornersRelaxedProblem(search.SearchProblem):
-  def __init__(self, startingLoc, corners):
-    print 'starting relaxed problem with',startingLoc,corners
+class GoalsRelaxedProblem(search.SearchProblem):
+  def __init__(self, startingLoc, goals):
+    #print 'starting relaxed problem with',startingLoc,goals
     self.startingPosition = startingLoc
-    self.corners = set(corners)
+    self.goals = set(goals)
     
   def getStartState(self):
     return (self.startingPosition,tuple([])) 
     
   def isGoalState(self, state):
-    return len(state[1]) == len(self.corners)
+    return len(state[1]) == len(self.goals)
 
   def visitCorner(self,loc,seen):
     seen = set(seen)
-    if loc in self.corners:
+    if loc in self.goals:
       seen.add(loc)
     return tuple(seen)
        
   def getSuccessors(self, state):
-    currentPosition, seen_corners = state
-    remaining_corners = self.corners - set(seen_corners)
-    to_corner_states = [ (c,self.visitCorner(c,seen_corners))  for c in remaining_corners ]
+    currentPosition, seen_goals = state
+    remaining_goals = self.goals - set(seen_goals)
+    to_corner_states = [ (c,self.visitCorner(c,seen_goals))  for c in remaining_goals ]
     successors = [ (c, c[0], util.manhattanDistance(currentPosition,c[0]))  for c in to_corner_states ]
     return successors
 
   def get_solution_cost(self):
-    actions  = search.uniformCostSearch(self)
-    print 'Actions found',actions
+    actions  = search.aStarSearch(self,goalHeuristic)
+    #print 'Actions found',actions
     totalCost = self.getCostOfActions(actions)
-    print('HPath found with total cost of %d' % (totalCost))
+    #print('HPath found with total cost of %d' % (totalCost))
     return totalCost
-    
+
 
   def getCostOfActions(self, actions):
     """
@@ -422,6 +423,13 @@ class CornersRelaxedProblem(search.SearchProblem):
       cost = cost + util.manhattanDistance( loc, action)
       loc = action
     return cost
+
+def goalHeuristic(state, problem=None):
+  currentPosition, seen_goals = state
+  remaining_goals = problem.goals - set(seen_goals)
+  if len(remaining_goals) == 0: return 0
+  dist, farthest_goal = max([ (util.manhattanDistance(currentPosition,g),g) for g in remaining_goals ])
+  return len(remaining_goals) - 1 + dist
 
 class AStarCornersAgent(SearchAgent):
   "A SearchAgent for FoodSearchProblem using A* and your foodHeuristic"
@@ -512,7 +520,13 @@ def foodHeuristic(state, problem):
   """
   position, foodGrid = state
   "*** YOUR CODE HERE ***"
-  return 0
+  remaining_food = foodGrid.asList()
+  #print foodGrid.asList()
+  
+  relaxed_problem = GoalsRelaxedProblem(state[0], remaining_food)
+  heuristic = relaxed_problem.get_solution_cost()
+  #print 'At',position,'heuristic is',heuristic
+  return heuristic
   
 class ClosestDotSearchAgent(SearchAgent):
   "Search for all food using a sequence of searches"
@@ -540,7 +554,8 @@ class ClosestDotSearchAgent(SearchAgent):
     problem = AnyFoodSearchProblem(gameState)
 
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    path = search.uniformCostSearch(problem)
+    return path
   
 class AnyFoodSearchProblem(PositionSearchProblem):
   """
@@ -576,7 +591,7 @@ class AnyFoodSearchProblem(PositionSearchProblem):
     x,y = state
     
     "*** YOUR CODE HERE ***"
-    util.raiseNotDefined()
+    return self.food[x][y]
 
 ##################
 # Mini-contest 1 #
