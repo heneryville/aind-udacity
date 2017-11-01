@@ -86,7 +86,7 @@ class AirCargoProblem(Problem):
                         precond_neg = []
                         effect_add = [expr("At({}, {})".format(c, a))]
                         effect_rem = [expr("In({}, {})".format(c, p))]
-                        unload = Action(expr("Load({}, {}, {})".format(c, p, a)),
+                        unload = Action(expr("Unload({}, {}, {})".format(c, p, a)),
                                      [precond_pos, precond_neg],
                                      [effect_add, effect_rem])
                         unloads.append(unload)
@@ -159,7 +159,7 @@ class AirCargoProblem(Problem):
         for effect in action.effect_rem:
             kb.retract(effect)
 
-        new_state = FluentState(kb.clauses, []) 
+        new_state = FluentState(kb.clauses, [])
         return encode_state(new_state, self.state_map)
 
     def goal_test(self, state: str) -> bool:
