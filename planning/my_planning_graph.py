@@ -200,7 +200,7 @@ def mutexify(node1: PgNode, node2: PgNode):
 class PlanningGraph():
     """
     A planning graph as described in chapter 10 of the AIMA text. The planning
-    graph can be used to reason about 
+    graph can be used to reason about
     """
 
     def __init__(self, problem: Problem, state: str, serial_planning=True):
@@ -311,6 +311,27 @@ class PlanningGraph():
         #   to see if a proposed PgNode_a has prenodes that are a subset of the previous S level.  Once an
         #   action node is added, it MUST be connected to the S node instances in the appropriate s_level set.
 
+        def precondition_nodes(a_node, s_level):
+            """Finds the state nodes in the given level that this action depends on. Returns None if any are not available"""
+            preconds = []
+            for precond in a_node.prenodes:
+                if precond not in s_level: return None
+                preconds.append(precond)
+            return preconds
+
+        action_level = set()
+        self.a_levels.append(action_level)
+
+        for action in self.all_actions:
+            node = PgNode_a(action)
+            preconds = precondition_nodes(node, self.s_levels[level])
+            if not preconds: continue
+            action_level.add(node)
+            # Connects the nodes to it's parents
+            node.parents.update(preconds)
+            for parent in preconds:
+                parent.children.add(node)
+
     def add_literal_level(self, level):
         """ add an S (literal) level to the Planning Graph
 
@@ -328,6 +349,19 @@ class PlanningGraph():
         #   may be "added" to the set without fear of duplication.  However, it is important to then correctly create and connect
         #   all of the new S nodes as children of all the A nodes that could produce them, and likewise add the A nodes to the
         #   parent sets of the S nodes
+        s_level = set()
+        self.s_levels.append(s_level)
+        cannonical_states = []
+
+        for pg_a in self.a_levels[level-1]:
+            for snode in pg_a.effnodes:
+                if snode in s_level:
+                    snode = next(x for x in cannonical_states if x == snode)
+                else:
+                    cannonical_states.append(snode)
+                    s_level.add(snode)
+                snode.parents.add(pg_a)
+                pg_a.children.add(pg_a)
 
     def update_a_mutex(self, nodeset):
         """ Determine and update sibling mutual exclusion for A-level nodes
@@ -390,7 +424,7 @@ class PlanningGraph():
 
     def interference_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         """
-        Test a pair of actions for mutual exclusion, returning True if the 
+        Test a pair of actions for mutual exclusion, returning True if the
         effect of one action is the negation of a precondition of the other.
 
         HINT: The Action instance associated with an action node is accessible

@@ -151,15 +151,20 @@ class AirCargoProblem(Problem):
         :param action: Action applied
         :return: resulting state after action
         """
-        kb = PropKB()
-        kb.tell(decode_state(state, self.state_map).pos_sentence())
-
-        for effect in action.effect_add:
-            kb.tell(effect)
-        for effect in action.effect_rem:
-            kb.retract(effect)
-
-        new_state = FluentState(kb.clauses, [])
+        new_state = FluentState([], [])
+        old_state = decode_state(state, self.state_map)
+        for fluent in old_state.pos:
+            if fluent not in action.effect_rem:
+                new_state.pos.append(fluent)
+        for fluent in action.effect_add:
+            if fluent not in new_state.pos:
+                new_state.pos.append(fluent)
+        for fluent in old_state.neg:
+            if fluent not in action.effect_add:
+                new_state.neg.append(fluent)
+        for fluent in action.effect_rem:
+            if fluent not in new_state.neg:
+                new_state.neg.append(fluent)
         return encode_state(new_state, self.state_map)
 
     def goal_test(self, state: str) -> bool:
@@ -200,8 +205,17 @@ class AirCargoProblem(Problem):
         executed.
         """
         # TODO implement (see Russell-Norvig Ed-3 10.2.3  or Russell-Norvig Ed-2 11.2)
+        # Counts unsatisfied goals. Since this problem doesn't have actions
+        # that can satisfy multiple goals, then each unsatisfied goal
+        # represents one required action
         count = 0
+        kb = PropKB()
+        kb.tell(decode_state(node.state, self.state_map).pos_sentence())
+        for clause in self.goal:
+            if clause not in kb.clauses:
+                count = count + 1
         return count
+
 
 
 def air_cargo_p1() -> AirCargoProblem:
@@ -305,8 +319,10 @@ def air_cargo_p3() -> AirCargoProblem:
            expr('In(C4, P2)'),
            expr('At(P1, JFK)'),
            expr('At(P1, ATL)'),
+           expr('At(P1, ORD)'),
            expr('At(P2, SFO)'),
            expr('At(P2, ATL)'),
+           expr('At(P2, ORD)'),
            ]
     init = FluentState(pos, neg)
     goal = [expr('At(C1, JFK)'),
