@@ -361,7 +361,7 @@ class PlanningGraph():
                     cannonical_states.append(snode)
                     s_level.add(snode)
                 snode.parents.add(pg_a)
-                pg_a.children.add(pg_a)
+                pg_a.children.add(snode)
 
     def update_a_mutex(self, nodeset):
         """ Determine and update sibling mutual exclusion for A-level nodes
@@ -420,7 +420,8 @@ class PlanningGraph():
         :return: bool
         """
         # TODO test for Inconsistent Effects between nodes
-        return False
+        return (not not set(node_a1.action.effect_add) & set(node_a2.action.effect_rem))
+          or (not not set(node_a2.action.effect_add) & set(node_a1.action.effect_rem))
 
     def interference_mutex(self, node_a1: PgNode_a, node_a2: PgNode_a) -> bool:
         """
