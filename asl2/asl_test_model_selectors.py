@@ -26,13 +26,13 @@ class TestSelectors(TestCase):
         model = SelectorConstant(self.sequences, self.xlengths, 'BOOK').select()
         self.assertGreaterEqual(model.n_components, 2)
 
-    def vest_select_bic_interface(self):
+    def test_select_bic_interface(self):
         model = SelectorBIC(self.sequences, self.xlengths, 'FRANK').select()
         self.assertGreaterEqual(model.n_components, 2)
         model = SelectorBIC(self.sequences, self.xlengths, 'VEGETABLE').select()
         self.assertGreaterEqual(model.n_components, 2)
 
-    def test_select_cv_interface(self):
+    def vest_select_cv_interface(self):
         model = SelectorCV(self.sequences, self.xlengths, 'JOHN').select()
         self.assertGreaterEqual(model.n_components, 2)
         model = SelectorCV(self.sequences, self.xlengths, 'CHICKEN').select()

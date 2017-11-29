@@ -76,9 +76,17 @@ class SelectorBIC(ModelSelector):
         """
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-        # TODO implement model selection based on BIC scores
-        raise NotImplementedError
+        def bic(model, n_components):
+            LL = model.score(self.X, self.lengths)
+            p = n_components
+            N = len(self.sequences)
+            return -2 * LL + p * math.log(N)
 
+        # TODO implement model selection based on BIC scores
+        models = [ (self.base_model(n_components), n_components) for n_components in range(self.min_n_components, self.max_n_components+1)]
+        scored_models = [ (bic(model, n_components), model , n_components) for model, n_components in models ]
+        score, model, n_components = max(scored_models)
+        return model
 
 class SelectorDIC(ModelSelector):
     ''' select best model based on Discriminative Information Criterion
@@ -105,21 +113,26 @@ class SelectorCV(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
         print('Running CV selector on', self.this_word)
-
         # TODO implement model selection using CV
         def cross_validate(n_components):
-            liklihoods = []
-            for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
-                # We clobber the X and lengths since the base_model function uses those to do the fit
-                self.X, self.lengths = combine_sequences(cv_train_idx, self.sequences)
-                testX, testLengths = combine_sequences(cv_test_idx, self.sequences)
-                print('Running cross validation')
-                model = self.base_model(n_components)
-                liklihoods.append(model.score(testX, testLengths))
-            return sum(liklihoods)/len(liklihoods)
+            try:
+                liklihoods = []
+                sequencesCnt = len(self.sequences)
+                split_method = KFold( min(3, sequencesCnt) )
+                for cv_train_idx, cv_test_idx in split_method.split(self.sequences):
+                    # We clobber the X and lengths since the base_model function uses those to do the fit
+                    self.X, self.lengths = combine_sequences(cv_train_idx, self.sequences)
+                    testX, testLengths = combine_sequences(cv_test_idx, self.sequences)
+                    print('Running cross validation for n_components', n_components)
+                    model = self.base_model(n_components)
+                    liklihoods.append(model.score(testX, testLengths))
+                return sum(liklihoods)/len(liklihoods)
+            except:
+                print('Failed to train with n_components',n_components)
+                return 0
 
-        likelihoods = [ (cross_validate(n_components), n_components) for n_components in range(self.min_n_components, self.max_n_components)]
-        likelihood, best_n_components = max(liklihoods)
+        likelihoods = [ (cross_validate(n_components), n_components) for n_components in range(self.min_n_components, self.max_n_components+1)]
+        likelihood, best_n_components = max(likelihoods)
         # Reset the X and lengths to train the model on the full thing
         self.X, self.lengths = self.hwords[self.this_word]
         return self.base_model(best_n_components)
