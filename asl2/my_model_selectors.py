@@ -75,17 +75,19 @@ class SelectorBIC(ModelSelector):
         :return: GaussianHMM object
         """
         warnings.filterwarnings("ignore", category=DeprecationWarning)
+        print('Starting BIC selection')
 
-        def bic(model, n_components):
+        def bic(model):
             LL = model.score(self.X, self.lengths)
-            p = n_components
-            N = len(self.sequences)
+            p = model.n_components
+            n_features = len(self.lengths)
+            N = model.n_components**2 + 2*model.n_components*n_features -1
             return -2 * LL + p * math.log(N)
 
         # TODO implement model selection based on BIC scores
-        models = [ (self.base_model(n_components), n_components) for n_components in range(self.min_n_components, self.max_n_components+1)]
-        scored_models = [ (bic(model, n_components), model , n_components) for model, n_components in models ]
-        score, model, n_components = max(scored_models)
+        models = [ self.base_model(n_components) for n_components in range(self.min_n_components, self.max_n_components+1)]
+        scored_models = [ (bic(model), model) for model in models ]
+        score, model = max(scored_models)
         return model
 
 class SelectorDIC(ModelSelector):
@@ -101,8 +103,21 @@ class SelectorDIC(ModelSelector):
     def select(self):
         warnings.filterwarnings("ignore", category=DeprecationWarning)
 
+        def dic(model):
+            def score_classes(classes):
+              print(self.words, list(range(len(self.words))))
+              indexes = [i for i in range(len(self.words)) if self.words[i] in classes] # Indexes of all the words in classes
+              X, lengths = combine_sequences(indexes,self.all_word_sequences) # Combine all of those selections together to get what we're scoring on
+              return model.score(X, lenghts)
+
+            other_words = list(set(self.words) - set(self.this_word))
+            return score_classes([self.this_word]) - score_classes(other_words)/len(other_words)
+
         # TODO implement model selection based on DIC scores
-        raise NotImplementedError
+        models = [ self.base_model(n_components) for n_components in range(self.min_n_components, self.max_n_components+1)]
+        scored_models = [ (dic(model), model ) for model in models ]
+        score, model = max(scored_models)
+        return model
 
 
 class SelectorCV(ModelSelector):
@@ -133,6 +148,7 @@ class SelectorCV(ModelSelector):
 
         likelihoods = [ (cross_validate(n_components), n_components) for n_components in range(self.min_n_components, self.max_n_components+1)]
         likelihood, best_n_components = max(likelihoods)
-        # Reset the X and lengths to train the model on the full thing
+        # We've got to train the model against the full data set
+        # Reset the X and lengths since they were crudely mutated above
         self.X, self.lengths = self.hwords[self.this_word]
         return self.base_model(best_n_components)
